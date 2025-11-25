@@ -94,6 +94,22 @@ These rules ensure that your AI assistant will:
 "Update all related documentation pages for the files I'm about to modify"
 ```
 
+### Remote MCP (HTTP/SSE)
+- Start the server on a host reachable from your IDE (`./start-server.sh` exposes `http://<host>:8787/sse`).
+- Ensure port `8787` is reachable (open firewall or create an SSH tunnel).
+- In your MCP config (Cursor/VS Code), add an HTTP entry pointing to the SSE endpoint:
+  ```json
+  {
+    "servers": {
+      "wikijs-remote": {
+        "type": "http",
+        "url": "http://<your-host-or-ip>:8787/sse"
+      }
+    }
+  }
+  ```
+- Refresh/reload MCP in the IDE; the Wiki.js tools will appear under `wikijs-remote`.
+
 ## 🚀 Key Features
 
 ### 📁 **Hierarchical Documentation**
