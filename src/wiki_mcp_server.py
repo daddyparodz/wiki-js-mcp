@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     LOG_FILE: str = Field(default="wikijs_mcp.log")
     REPOSITORY_ROOT: str = Field(default="./")
     DEFAULT_SPACE_NAME: str = Field(default="Documentation")
+    MCP_TRANSPORT: str = Field(default="http")
+    MCP_HTTP_PATH: str = Field(default="")  # If empty, choose based on transport
+    MCP_HOST: str = Field(default="0.0.0.0")
+    MCP_PORT: int = Field(default=8787)
     
     class Config:
         env_file = ".env"
@@ -2048,7 +2052,29 @@ async def wikijs_cleanup_orphaned_mappings() -> str:
 
 def main():
     """Main entry point for the MCP server."""
-    mcp.run(transport="sse", host="0.0.0.0", port=8787)
+    transport = settings.MCP_TRANSPORT.lower()
+    http_transports = {"http", "sse", "streamable-http"}
+    
+    if transport not in http_transports | {"stdio"}:
+        logger.warning(f"Unknown MCP_TRANSPORT '{transport}', defaulting to http")
+        transport = "http"
+    
+    run_kwargs = {}
+    if transport in http_transports:
+        path = (
+            settings.MCP_HTTP_PATH
+            if settings.MCP_HTTP_PATH
+            else ("/sse" if transport == "sse" else "/mcp")
+        )
+        run_kwargs.update(
+            {
+                "host": settings.MCP_HOST,
+                "port": settings.MCP_PORT,
+                "path": path,
+            }
+        )
+    
+    mcp.run(transport=transport, **run_kwargs)
 
 if __name__ == "__main__":
     main()

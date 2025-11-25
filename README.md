@@ -96,6 +96,10 @@ These rules ensure that your AI assistant will:
 
 ### Remote MCP (HTTP/SSE)
 - Start the server on a host reachable from your IDE (`./start-server.sh` exposes `http://<host>:8787/sse`).
+- Transport/path notes:
+  - `MCP_TRANSPORT=http` uses the streamable HTTP transport (default path `/mcp`).
+  - `MCP_TRANSPORT=sse` uses SSE (default path `/sse`).
+  - Override the path with `MCP_HTTP_PATH` in `.env` if you need a custom route.
 - Ensure port `8787` is reachable (open firewall or create an SSH tunnel).
 - In your MCP config (Cursor/VS Code), add an HTTP entry pointing to the SSE endpoint:
   ```json
