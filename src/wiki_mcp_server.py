@@ -2048,14 +2048,7 @@ async def wikijs_cleanup_orphaned_mappings() -> str:
 
 def main():
     """Main entry point for the MCP server."""
-    import asyncio
-    
-    async def run_server():
-        await wikijs.authenticate()
-        logger.info("Wiki.js MCP Server started")
-        
-    # Run the server
-    mcp.run()
+    mcp.run(transport="sse", host="0.0.0.0", port=8787)
 
 if __name__ == "__main__":
-    main() 
+    main()
