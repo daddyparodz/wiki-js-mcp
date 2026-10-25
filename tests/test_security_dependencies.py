@@ -8,7 +8,7 @@ import tomllib
 
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
-import pytest
+import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,12 +27,49 @@ def test_manifests_exclude_vulnerable_framework_versions():
     }
     assert "3.4.10" in requirements["fastmcp"].specifier
     assert "3.1.0" not in requirements["fastmcp"].specifier
+    assert "3.4.9" not in requirements["fastmcp"].specifier
+    assert "4.0.0" not in requirements["fastmcp"].specifier
+    assert "3.0.0" not in requirements["pyjwt"].specifier
     assert "2.14.0" not in requirements["pyjwt"].specifier
     assert "2.15.0" in requirements["pyjwt"].specifier
     assert "2.14.0" not in SpecifierSet(poetry["pyjwt"])
+    for name, floor, rejected, section in [
+        ("httpx", "0.28.1", "0.28.0", poetry),
+        ("markdown", "3.8.1", "3.8.0", poetry),
+        ("python-dotenv", "1.2.2", "1.2.1", poetry),
+        (
+            "pytest",
+            "9.0.3",
+            "9.0.2",
+            tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["poetry"][
+                "group"
+            ]["dev"]["dependencies"],
+        ),
+        (
+            "black",
+            "26.10.1",
+            "26.10.0",
+            tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["poetry"][
+                "group"
+            ]["dev"]["dependencies"],
+        ),
+    ]:
+        specifier = section[name]
+        if specifier.startswith("^"):
+            # Check the lower bound; Poetry's caret upper bound is unchanged.
+            specifier = ">=" + specifier[1:]
+        assert floor in SpecifierSet(specifier)
+        assert rejected not in SpecifierSet(specifier)
+        assert floor in requirements[name].specifier
+        assert rejected not in requirements[name].specifier
 
 
 def test_isolated_mcp_tools_and_graphql(monkeypatch, tmp_path):
+    def deny_network(*args, **kwargs):
+        raise AssertionError("Offline test attempted a network connection")
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", deny_network)
+    monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", deny_network)
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("PYTHON_DOTENV_DISABLED", "1")
     for name in list(__import__("os").environ):
